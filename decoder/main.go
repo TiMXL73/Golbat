@@ -342,19 +342,22 @@ func UpdatePokemonBatch(ctx context.Context, db db.DbDetails, scanParameters Sca
 
 	if scanParameters.ProcessNearby {
 		for _, nearby := range nearbyPokemonList {
-			encounterId := strconv.FormatUint(nearby.Data.EncounterId, 10)
-			pokemonMutex, _ := pokemonStripedMutex.GetLock(encounterId)
-			pokemonMutex.Lock()
+			// TiMOD[TMP-FiX]: Skip most `nearby_cell`. Some bleed-through but good enough for now. Needs to be revisited.
+			if (nearby.Data.FortId != "") {
+				encounterId := strconv.FormatUint(nearby.Data.EncounterId, 10)
+				pokemonMutex, _ := pokemonStripedMutex.GetLock(encounterId)
+				pokemonMutex.Lock()
 
-			pokemon, err := getOrCreatePokemonRecord(ctx, db, encounterId)
-			if err != nil {
-				log.Printf("getOrCreatePokemonRecord: %s", err)
-			} else {
-				pokemon.updateFromNearby(ctx, db, nearby.Data, int64(nearby.Cell), username)
-				savePokemonRecord(ctx, db, pokemon)
+				pokemon, err := getOrCreatePokemonRecord(ctx, db, encounterId)
+				if err != nil {
+					log.Printf("getOrCreatePokemonRecord: %s", err)
+				} else {
+					pokemon.updateFromNearby(ctx, db, nearby.Data, int64(nearby.Cell), username)
+					savePokemonRecord(ctx, db, pokemon)
+				}
+
+				pokemonMutex.Unlock()
 			}
-
-			pokemonMutex.Unlock()
 		}
 	}
 
