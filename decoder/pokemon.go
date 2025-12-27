@@ -753,11 +753,15 @@ func (pokemon *Pokemon) setExpireTimestampFromSpawnpoint(ctx context.Context, db
 }
 
 func (pokemon *Pokemon) setUnknownTimestamp(now int64) {
-	if !pokemon.ExpireTimestamp.Valid {
-		pokemon.ExpireTimestamp = null.IntFrom(now + 20*60) // should be configurable, add on 20min
+	if pokemon.SeenType.ValueOrZero() == SeenType_Cell {
+		pokemon.ExpireTimestamp = null.IntFrom(now - 1) // TiMOD[TMP-FiX]: Use negative expiry for `nearby_cell` = auto-rejected by API caller and not shown to end-user.
 	} else {
-		if pokemon.ExpireTimestamp.Int64 < now {
-			pokemon.ExpireTimestamp = null.IntFrom(now + 10*60) // should be configurable, add on 10min
+		if !pokemon.ExpireTimestamp.Valid {
+			pokemon.ExpireTimestamp = null.IntFrom(now + 20*60) // should be configurable, add on 20min
+		} else {
+			if pokemon.ExpireTimestamp.Int64 < now {
+				pokemon.ExpireTimestamp = null.IntFrom(now + 10*60) // should be configurable, add on 10min
+			}
 		}
 	}
 }
